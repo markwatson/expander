@@ -1,30 +1,18 @@
-OVERVIEW
---------
-Expander allows any language to be embadable in other text. Similar to PHP,
-it allows for running of arbitrary code in other languages.
+Expander lets one run code in other code by allowing one to define functions
+that are expanded out by executing them and putting their results back in the
+file. The prupose is that given a file or directory, we can expand "macros"
+using a given language.
 
-For example if we have a ruby file hello.rb:
-    puts "HELLO WORLD!"
-    <?python
-        for i in xrange(5):
-            print 'puts "Python is better than Ruby..."'
-    ?>
+For example:
 
-If we run "expander hello.rb", we get:
-$ expander hello.rb
-puts "HELLO WORLD!"
-puts "Python is better than Ruby..."
-puts "Python is better than Ruby..."
-puts "Python is better than Ruby..."
-puts "Python is better than Ruby..."
-puts "Python is better than Ruby..."
+Macro definition ("hello" is the name, and "python" is the language):
+??defm:hello:python(arg1, arg2){{
+print "puts 'Hello, %s!!!' \n%s" % (arg1, arg2)
+}}
 
-If we call expander on a directory, all files matching *.exp.* will get
-expanded into *.*, and all the code will be executed in the same scope.
+Macro call (eg, in ruby code):
+??hello??'Joe'??'puts "Why, dude?"'??
 
-
-LIMITATIONS
------------
-There are a few known limitations:
-- Can't use '?>' anywhere in a defined block except as the terminator.
-- Python is the only currently supported language.
+Result:
+puts 'Hello, Joe!!!'
+puts "Why, dude?"
