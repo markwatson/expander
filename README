@@ -16,3 +16,10 @@ Macro call (eg, in ruby code):
 Result:
 puts 'Hello, Joe!!!'
 puts "Why, dude?"
+
+To call:
+python expander.py [FILE|DIRECTORY]
+
+If a file is passed in, the expanded output is printed to stdout. If a
+directory is passed in, all files matching *.exp.* will be expanded into
+*.* (the '.exp.' being removed).
