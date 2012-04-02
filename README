@@ -1,0 +1,30 @@
+OVERVIEW
+--------
+Expander allows any language to be embadable in other text. Similar to PHP,
+it allows for running of arbitrary code in other languages.
+
+For example if we have a ruby file hello.rb:
+    puts "HELLO WORLD!"
+    <?python
+        for i in xrange(5):
+            print 'puts "Python is better than Ruby..."'
+    ?>
+
+If we run "expander hello.rb", we get:
+$ expander hello.rb
+puts "HELLO WORLD!"
+puts "Python is better than Ruby..."
+puts "Python is better than Ruby..."
+puts "Python is better than Ruby..."
+puts "Python is better than Ruby..."
+puts "Python is better than Ruby..."
+
+If we call expander on a directory, all files matching *.exp.* will get
+expanded into *.*, and all the code will be executed in the same scope.
+
+
+LIMITATIONS
+-----------
+There are a few known limitations:
+- Can't use '?>' anywhere in a defined block except as the terminator.
+- Python is the only currently supported language.
