@@ -25,8 +25,10 @@ from pprint import pprint
 # CONSTANTS
 # define the special char that is used in the syntax.
 # probably use something that's no where else in the code.
+
 special_char_escaped = '\?\?'
 special_char = '??'
+end_char = ';'
 start_def = '{{'
 end_def = '}}'
 
@@ -41,14 +43,25 @@ re_func_def = re.compile(
     },
     re.I | re.S)
 re_func_call = re.compile(
-    r'%(sc)s(.*?)%(sc)s((?:.*?%(sc)s)*)'\
+    r'%(sc)s(.*?)%(sc)s((?:.*?%(sc)s)*?)%(end)s'\
     % {
         'sc': special_char_escaped,
+        'end': end_char,
     },
     re.I | re.S)
 
-def indent(code):
-    return '\n'.join(['    ' + line for line in code.split('\n')])
+def indent(code, indent_str=None, ignore_first_line=False):
+    if indent_str is None:
+        indent_str = '    '
+    out = []
+    first = True
+    for line in code.split('\n'):
+        if first and ignore_first_line:
+            out.append(line)
+        else:
+            out.append(indent_str + line)
+        first = False
+    return '\n'.join(out)
 
 # LANGUAGES
 class Lang(object):
@@ -57,7 +70,7 @@ class Lang(object):
 
 class Python(Lang):
     def add_function(self, name, args, code):
-        self.functions += 'def %s(%s):\n%s' %\
+        self.functions += '\ndef %s(%s):\n%s' %\
                      (name,
                       ', '.join(args),
                       indent(code))
@@ -83,7 +96,7 @@ class Python(Lang):
             os.unlink(t_name)
 
             # return the result
-            return result
+            return result.rstrip('\n')
         else:
             raise Exception("Unknown function %s" % func)
 
@@ -122,30 +135,51 @@ def define_functions(f):
 
         files[f] = code
 
+def str_reverse(s):
+    """
+    Reverses a string.
+    """
+    s = list(s)
+    s.reverse()
+    return ''.join(s)
+
 def expand_functions():
     """
     Loop through all the files and expand the functions.
     """
+    current_code = ''
+    def expand(m):
+        """
+        Takes a match object and expands the function calls.
+        """
+        # get the peices
+        name, args = m.groups()
+        args = args.split(special_char)[:-1]
+
+        # get the left indent.
+        left_indent = ''
+        i = m.start() - 1
+        while i >= 0 and (current_code[i] == ' ' or current_code[i] == '\t'):
+            left_indent += current_code[i]
+            i -= 1
+        left_indent = str_reverse(left_indent)
+
+        # get the function result
+        l = function_calls.get(name)
+        if l is None:
+            raise Exception("Undeclared function %s" % name)
+        result = l.run_function(name, args)
+
+        # return the result
+        if result is None:
+            raise Exception("Error running function")
+        else:
+            return indent(result, left_indent, True)
+
     for f, code in files.items():
-        c = code
-        for m in list(re_func_call.finditer(code)):
-            # get the peices
-            name, args = m.groups()
-            args = args.split(special_char)[:-1]
+        current_code = code
 
-            # get the function result
-            l = function_calls.get(name)
-            if l is None:
-                raise Exception("Undeclared function %s" % name)
-            result = l.run_function(name, args)
-
-            # replace the result
-            if result is None:
-                raise Exception("Error running function")
-            else:
-                c = c.replace(m.group(), result, 1)
-
-        files[f] = c
+        files[f] = re_func_call.sub(expand, current_code)
 
 def expand_dir(path):
     # loop through the files in the path and add them to the files structure
