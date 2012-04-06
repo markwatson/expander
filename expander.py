@@ -117,23 +117,25 @@ def define_functions(f):
     """
     Takes a file and finds all function definitions.
     """
+    def define_func(m):
+        """
+        Takes a function match and saves it off.
+        """
+        name, lang, args, f_code = m.groups()
+        args = map(str.strip, args.split(','))
+
+        if name in function_calls:
+            raise Exception("Trying to redeclare function %s." % name)
+        l = langs.get(lang)
+        if l is not None:
+            l.add_function(name, args, f_code)
+            function_calls[name] = l
+
+        return ''
+
     code = files.get(f)
     if code is not None:
-        for m in list(re_func_def.finditer(code)):
-            name, lang, args, f_code = m.groups()
-            args = map(str.strip, args.split(','))
-
-            if name in function_calls:
-                raise Exception("Trying to redeclare function %s." % name)
-            l = langs.get(lang)
-            if l is not None:
-                l.add_function(name, args, f_code)
-
-                function_calls[name] = l
-
-            code = code.replace(m.group(), '', 1)
-
-        files[f] = code
+        files[f] = re_func_def.sub(define_func, code)
 
 def str_reverse(s):
     """
